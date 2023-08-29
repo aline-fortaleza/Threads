@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-// Definindo a quantidade de Leitores e Escritores
-#define NUM_LEITORES 5
-#define NUM_ESCRITORES 2
+// Iniciando Leitores e Escritores
+int n;
+int m;
 
 // Definindo o tamanho do dado
 #define DATA_SIZE 10
@@ -21,8 +21,8 @@ int count_leitores = 0;
 int wait_escritores = 0;
 int aberto = 0;
 
-// Função do Leitor para ler os dados da data[]
-void* reader(void* arg) {
+// FunÃ§Ã£o do Leitor para ler os dados da data[]
+void* ler(void* arg) {
 
     // Trazendo o id da Thread
     int thread_id = *(int*)arg;
@@ -40,8 +40,9 @@ void* reader(void* arg) {
 
         }
 
-        // Adicionando ao contador de leitura
+        // Avisando que estÃ¡ lendo os dados
         count_leitores++;
+        pthread_mutex_unlock(&mutex);
 
         printf("Leitor %d lendo data: ", thread_id);
 
@@ -54,7 +55,8 @@ void* reader(void* arg) {
 
         printf("\n");
 
-        // Retirando do contador de leitores
+        // Retirando do contador de leitores e informando que nÃ£o estÃ¡ lendo mais
+        pthread_mutex_lock(&mutex);
         count_leitores--;
 
         // Liberando o cond
@@ -75,7 +77,7 @@ void* reader(void* arg) {
     return NULL;
 }
 
-void* writer(void* arg) {
+void* escrever(void* arg) {
 
     // Trazendo o id da Thread
     int thread_id = *(int*)arg;
@@ -97,8 +99,9 @@ void* writer(void* arg) {
 
         }
 
-        // Abrindo a edição
+        // Abrindo a ediÃ§Ã£o
         aberto = 1;
+        wait_escritores--;
 
         printf("Escritor %d escrevendo data\n", thread_id);
 
@@ -108,9 +111,7 @@ void* writer(void* arg) {
             data[i] = data[i] + i; 
 
         }
-
         // Liberando o aberto e diminuindo 1 do contador de escritor
-        wait_escritores--;
         aberto = 0;
 
         // Informando que ta tudo ok, pode voltar a ler os dados
@@ -127,44 +128,48 @@ void* writer(void* arg) {
     return NULL;
 }
 
-// Main do código
+// Main do cÃ³digo
 int main() {
 
     printf("\n");
-    printf("-#-#- Inicializando o Programa da Questão 3 -#-#-\n");
+    printf("-#-#- Inicializando o Programa da QuestÃ£o 3 -#-#-\n");
     printf("\n");
 
-    // Iniciando as Threads
-    pthread_t leitores[NUM_LEITORES];
-    pthread_t escritores[NUM_ESCRITORES];
+    printf("Escolha o Numero de Leitores e Escritores / (N) e (M):\n");
 
-    // Criando os Leitores, cada leitor é uma thread separada
-    for (int i = 0; i < NUM_LEITORES; i++) {
+    scanf("%d %d", &n, &m);
+
+    // Iniciando as Threads
+    pthread_t leitores[n];
+    pthread_t escritores[m];
+
+    // Criando os Leitores, cada leitor Ã© uma thread separada
+    for (int i = 0; i < n; i++) {
 
         int* thread_id = (int*)malloc(sizeof(int));
         *thread_id = i + 1;
-        pthread_create(&leitores[i], NULL, reader, (void*)thread_id);
+        pthread_create(&leitores[i], NULL, ler, (void*)thread_id);
 
     }
 
-    // Criando os escritores, cada escritor é uma thread separada
-    for (int i = 0; i < NUM_ESCRITORES; i++) {
+    // Criando os escritores, cada escritor Ã© uma thread separada
+    for (int i = 0; i < m; i++) {
 
         int* thread_id = (int*)malloc(sizeof(int));
         *thread_id = i + 1;
-        pthread_create(&escritores[i], NULL, writer, (void*)thread_id);
+        pthread_create(&escritores[i], NULL, escrever, (void*)thread_id);
 
     }
 
     // Dando join nos leitores quando acabar
-    for (int i = 0; i < NUM_LEITORES; i++) {
+    for (int i = 0; i < n; i++) {
 
         pthread_join(leitores[i], NULL);
 
     }
 
     // Dando join nos escritores quando acabar
-    for (int i = 0; i < NUM_ESCRITORES; i++) {
+    for (int i = 0; i < m; i++) {
 
         pthread_join(escritores[i], NULL);
 
@@ -173,3 +178,4 @@ int main() {
     return 0;
 
 }
+
